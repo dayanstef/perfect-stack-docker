@@ -8,7 +8,6 @@ LABEL maintainer="D. Stefanoski <dejan@newday-media.com>"
 RUN apt-get -yq update && \
     apt-get -yq install software-properties-common \
     ca-certificates curl gnupg supervisor \
-    language-pack-UTF-8 && \
     add-apt-repository ppa:ondrej/php && \
     locale
 
