@@ -4,20 +4,18 @@ FROM ubuntu:bionic
 # MAINTAINER.
 LABEL maintainer="D. Stefanoski <dejan@newday-media.com>"
 
-# INSTALL SOME SYSTEM PACKAGES & SERVICES.
-RUN apt-get -yq update && \
-    apt-get -yq install software-properties-common \
-    ca-certificates curl gnupg supervisor \
-    add-apt-repository ppa:ondrej/php && \
-    locale
-
 # EXPORT & CONFIGURE GLOBALS.
 RUN export DEBIAN_FRONTEND=noninteractive \
     LANGUAGE=en_US.UTF-8; \
     LANG=en_US.UTF-8; \
-    LC_ALL=en_US.UTF-8; && \
-    locale-gen en_US.UTF-8 && \
-    dpkg-reconfigure locales \
+    LC_ALL=en_US.UTF-8;
+
+# INSTALL SOME SYSTEM PACKAGES & SERVICES.
+RUN apt-get -yq update && \
+    apt-get -yq install software-properties-common \
+    tzdata ca-certificates curl gnupg supervisor && \
+    add-apt-repository ppa:ondrej/php && \
+    locale
 
 # INSTALL APP SERVICES AND EXTENSIONS.
 RUN curl -sL https://deb.nodesource.com/setup_8.x -o nodesource_setup.sh && \
@@ -59,7 +57,7 @@ RUN npm install -g laravel-echo-server
 
 ADD start.sh /start.sh
 RUN chmod 755 /start.sh
-RUN rm /etc/nginx/sites-available/default.conf
+RUN rm -rf /etc/nginx/sites-available/default.conf
 ADD config/nginx/default.conf /etc/nginx/sites-available/default.conf
 
 EXPOSE 80 6001 587 25 5432
