@@ -5,7 +5,7 @@ FROM ubuntu:bionic
 LABEL maintainer="D. Stefanoski <dejan@newday-media.com>"
 
 # EXPORT & CONFIGURE GLOBALS.
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y wget gnupg && \
+RUN DEBIAN_FRONTEND=noninteractive && \
     export LANGUAGE=en_US.UTF-8; \
     LANG=en_US.UTF-8; \
     LC_ALL=en_US.UTF-8;
@@ -34,7 +34,6 @@ RUN apt-get -yq install nginx \
     php-pear \
     php-imagick \
     php7.2-imap \
-    php7.2-mcrypt \
     php7.2-pspell \
     php7.2-recode \
     php7.2-tidy \
@@ -62,6 +61,6 @@ EXPOSE 80
 # LARAVEL ECHO SERVER PORT
 EXPOSE 6001
 
-WORKDIR ${APP_ROOT}
+WORKDIR /var/www
 
 CMD ["/start.sh"]
