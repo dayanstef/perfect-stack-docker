@@ -2,8 +2,7 @@
 
 `php7.2-fpm` `nginx` `laravel-echo-server`
 
-#####Docker commands for maintaining project
-
+##### Docker commands for maintaining the Docker build
 
 ###### Building
 `docker build -t perfect-stack-docker:latest .`
