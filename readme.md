@@ -1,3 +1,3 @@
 ### Perfect Stack Docker
 
-`php` `nginx` `postgresql` `redis` `memcached` `laravel-echo-server`
+`php7.2-fpm` `nginx` `laravel-echo-server`
