@@ -55,6 +55,12 @@ RUN chmod 755 /start.sh
 RUN rm -rf /etc/nginx/sites-enabled/*
 COPY config/nginx/default.conf /etc/nginx/sites-enabled/default.conf
 
+RUN sed -i "s|sendfile on|sendfile off|" /etc/nginx/nginx.conf
+RUN sed -i "s|;extension=php_pdo_pgsql.dll|extension=php_pdo_pgsql.dll|" /etc/php/7.2/fpm/php.ini
+RUN sed -i "s|;extension=php_pgsql.dll|extension=php_pgsql.dll|" /etc/php/7.2/fpm/php.ini
+
+RUN apt-get -yq clean && apt-get -yq autoremove
+
 # NGINX PORT
 EXPOSE 80
 
