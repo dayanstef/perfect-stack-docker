@@ -50,10 +50,10 @@ RUN apt-get -yq install nginx \
 
 RUN npm install -g laravel-echo-server
 
-ADD start.sh /start.sh
+COPY start.sh /start.sh
 RUN chmod 755 /start.sh
 RUN rm -rf /etc/nginx/sites-enabled/default.conf
-ADD config/nginx/default.conf /etc/nginx/sites-enabled/default.conf
+COPY config/nginx/default.conf /etc/nginx/sites-enabled/default.conf
 
 # NGINX PORT
 EXPOSE 80
