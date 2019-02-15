@@ -52,7 +52,7 @@ RUN npm install -g laravel-echo-server
 
 COPY start.sh /start.sh
 RUN chmod 755 /start.sh
-RUN rm -rf /etc/nginx/sites-enabled/default.conf
+RUN rm -rf /etc/nginx/sites-enabled/*
 COPY config/nginx/default.conf /etc/nginx/sites-enabled/default.conf
 
 # NGINX PORT
