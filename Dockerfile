@@ -11,6 +11,10 @@ ARG NODEJS_VERSION=8
 ARG APP_ROOT=/var/www
 ARG APP_HOST=localhost
 ARG APP_PORT=80
+ARG DB_PORT=5432
+ARG REDIS_PORT=6379
+ARG MEMCACHED_PORT=11211
+ARG LARAVEL_ECHO_SERVER_PORT=6001
 ARG DB_USERNAME=docker
 ARG DB_PASSWORD=docker
 ARG COMPOSER_HASH=544e09ee996cdf60ece3804abc52599c22b1f40f4323403c44d44fdfdd586475ca9813a858088ffbc1f233e9b180f061
@@ -105,7 +109,7 @@ RUN /etc/init.d/postgresql start &&\
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/${POSTGRE_SQL_VERSION}/main/pg_hba.conf
 RUN echo "listen_addresses='*'" >> /etc/postgresql/${POSTGRE_SQL_VERSION}/main/postgresql.conf
 
-EXPOSE ${APP_PORT}
+EXPOSE ${APP_PORT} ${DB_PORT} ${REDIS_PORT} ${MEMCACHED_PORT} ${LARAVEL_ECHO_SERVER_PORT}
 
 # PREPARE STARTUP SCRIPT
 ADD start.sh /start.sh
