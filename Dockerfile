@@ -13,6 +13,7 @@ ARG APP_HOST=localhost
 ARG APP_PORT=80
 ARG DB_USERNAME=docker
 ARG DB_PASSWORD=docker
+ARG COMPOSER_HASH=544e09ee996cdf60ece3804abc52599c22b1f40f4323403c44d44fdfdd586475ca9813a858088ffbc1f233e9b180f061
 ENV TZ=Europe/Amsterdam
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -75,6 +76,9 @@ RUN apt-get update \
     postgresql-client-${POSTGRE_SQL_VERSION} \
     postgresql-contrib-${POSTGRE_SQL_VERSION} \
     supervisor
+
+RUN cd ~ && curl -sS https://getcomposer.org/installer -o composer-setup.php && \
+    php -r "if (hash_file('SHA384', 'composer-setup.php') === '${COMPOSER_HASH}') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
 
 # CLEANUP THE MESS
 RUN apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && \
