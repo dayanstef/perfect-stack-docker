@@ -1,6 +1,6 @@
 ### Perfect Stack Docker
 
-`php7.2-fpm` `nginx` `laravel-echo-server`
+`php-fpm` `nginx` `postgres` `supervisor` `memcache` `redis` `laravel-echo-server`
 
 ##### Docker commands for maintaining the Docker build
 

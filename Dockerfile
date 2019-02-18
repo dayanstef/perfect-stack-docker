@@ -1,8 +1,10 @@
-# NGINX
+# OS
 FROM ubuntu:bionic
 
 # MAINTAINER.
 LABEL maintainer="D. Stefanoski <dejan@newday-media.com>"
+
+WORKDIR ${APP_ROOT}
 
 # EXPORT & CONFIGURE GLOBALS.
 RUN DEBIAN_FRONTEND=noninteractive && \
@@ -13,62 +15,86 @@ RUN DEBIAN_FRONTEND=noninteractive && \
 # INSTALL SOME SYSTEM PACKAGES & SERVICES.
 RUN apt-get -yq update && \
     apt-get -yq install software-properties-common \
-    tzdata ca-certificates curl wget gnupg && \
+    tzdata ca-certificates curl wget gnupg git unzip && \
     add-apt-repository ppa:ondrej/php && \
     locale
 
 # INSTALL APP SERVICES AND EXTENSIONS.
-RUN curl -sL https://deb.nodesource.com/setup_8.x -o nodesource_setup.sh && \
+RUN curl -sL https://deb.nodesource.com/setup_${NODEJS_VERSION}.x -o nodesource_setup.sh && \
     bash nodesource_setup.sh
 
-RUN apt-get -yq install nginx \
-    php7.2 \
-    php7.2-fpm \
-    php7.2-cli \
-    php7.2-common \
-    php7.2-curl \
-    php7.2-intl \
-    php7.2-gd \
-    php7.2-json \
-    php7.2-intl \
+RUN apt-get update \
+    && apt-get -y --no-install-recommends install nginx
+    php${PHP_VERSION} \
+    php${PHP_VERSION}-fpm \
+    php${PHP_VERSION}-cli \
+    php${PHP_VERSION}-common \
+    php${PHP_VERSION}-curl \
+    php${PHP_VERSION}-intl \
+    php${PHP_VERSION}-gd \
+    php${PHP_VERSION}-json \
+    php${PHP_VERSION}-intl \
     php-pear \
     php-imagick \
-    php7.2-imap \
-    php7.2-pspell \
-    php7.2-recode \
-    php7.2-tidy \
-    php7.2-xmlrpc \
-    php7.2-xml \
-    php7.2-xsl \
-    php7.2-mbstring \
+    php${PHP_VERSION}-imap \
+    php${PHP_VERSION}-pspell \
+    php${PHP_VERSION}-recode \
+    php${PHP_VERSION}-tidy \
+    php${PHP_VERSION}-xmlrpc \
+    php${PHP_VERSION}-xml \
+    php${PHP_VERSION}-xsl \
+    php${PHP_VERSION}-mbstring \
     php-gettext \
-    php7.2-pgsql \
+    php${PHP_VERSION}-pgsql \
     build-essential \
-    php7.2-zip \
-    composer \
-    nodejs
+    memcached \
+    redis \
+    php-memcache \
+    php-memcached \
+    php${PHP_VERSION}-memcached \
+    php-redis \
+    php${PHP_VERSION}-zip \
+    build-essential \
+    python-software-properties \
+    software-properties-common \
+    postgresql-${POSTGRE_SQL_VERSION} \
+    postgresql-client-${POSTGRE_SQL_VERSION} \
+    postgresql-contrib-${POSTGRE_SQL_VERSION}
+    supervisor
 
-RUN npm install -g laravel-echo-server
+# CLEANUP THE MESS
+RUN apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && \
+    apt-get autoremove && \
+    rm -rf ${APP_ROOT}/html && \
+    mkdir -p ${APP_ROOT}/logs
 
-COPY start.sh /start.sh
+COPY nginx/nginx.conf /etc/nginx/site-enabled/default.conf
+COPY php-fpm/php-ini-overrides.ini /etc/php/${PHP_VERSION}/fpm/conf.d/99-overrides.ini
+COPY supervisor/monitor.conf /etc/supervisor/conf.d/monitor.conf
+
+# OPTIMIZE PHP & NGINX
+RUN sed -i 's|sendfile on|sendfile off|' /etc/nginx/nginx.conf && \
+    sed -i 's|server_name localhost|server_name ${APP_HOST}|' /etc/nginx/site-enabled/default.conf && \
+    sed -i 's|;cgi.fix_pathinfo=1|cgi.fix_pathinfo=0|' /etc/php/${PHP_VERSION}/cli/php.ini && \
+    sed -i 's|;extension=php_pdo_pgsql.dll|extension=php_pdo_pgsql.dll|' /etc/php/${PHP_VERSION}/fpm/php.ini && \
+    sed -i 's|;extension=php_pgsql.dll|extension=php_pgsql.dll|' /etc/php/${PHP_VERSION}/fpm/php.ini
+
+# INSTAL COMPOSER
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
+    php -r "if (hash_file('SHA384', 'composer-setup.php') === '${COMPOSER_HASH}') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" && \
+    php composer-setup.php --install-dir=/usr/bin --filename=composer && \
+    php -r "unlink('composer-setup.php');"
+
+# SETUP DATABASE
+USER postgres
+RUN /etc/init.d/postgresql start &&\
+    psql --command "CREATE USER ${DB_USERNAME} WITH SUPERUSER PASSWORD '${DB_PASSWORD}';" &&\
+    createdb -O ${DB_USERNAME} ${DB_PASSWORD}
+RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/${POSTGRE_SQL_VERSION}/main/pg_hba.conf
+RUN echo "listen_addresses='*'" >> /etc/postgresql/${POSTGRE_SQL_VERSION}/main/postgresql.conf
+
+# PREPARE STARTUP SCRIPT
+ADD start.sh /start.sh
 RUN chmod 755 /start.sh
-RUN rm -rf /etc/nginx/sites-enabled/*
-COPY config/nginx/default.conf /etc/nginx/sites-enabled/default.conf
 
-RUN sed -i "s|sendfile on|sendfile off|" /etc/nginx/nginx.conf
-RUN sed -i "s|;extension=php_pdo_pgsql.dll|extension=php_pdo_pgsql.dll|" /etc/php/7.2/fpm/php.ini
-RUN sed -i "s|;extension=php_pgsql.dll|extension=php_pgsql.dll|" /etc/php/7.2/fpm/php.ini
-
-RUN apt-get -yq clean && apt-get -yq autoremove
-
-# NGINX PORT
-EXPOSE 80
-
-# LARAVEL ECHO SERVER PORT
-EXPOSE 6001
-
-# WORKIN DIRECTORY
-WORKDIR /var/www
-
-# INIT SCRIPT
 CMD ["/start.sh"]
