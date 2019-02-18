@@ -4,6 +4,18 @@ FROM ubuntu:bionic
 # MAINTAINER.
 LABEL maintainer="D. Stefanoski <dejan@newday-media.com>"
 
+# DEFAULT ARGUMENTS
+ARG PHP_VERSION=7.2
+ARG POSTGRE_SQL_VERSION=10
+ARG NODEJS_VERSION=8
+ARG APP_ROOT=/var/www
+ARG APP_HOST=localhost
+ARG APP_PORT=80
+ARG DB_USERNAME=docker
+ARG DB_PASSWORD=docker
+ENV TZ=Europe/Amsterdam
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 WORKDIR ${APP_ROOT}
 
 # EXPORT & CONFIGURE GLOBALS.
@@ -23,10 +35,13 @@ RUN apt-get -yq update && \
 RUN curl -sL https://deb.nodesource.com/setup_${NODEJS_VERSION}.x -o nodesource_setup.sh && \
     bash nodesource_setup.sh
 
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" > /etc/apt/sources.list.d/PostgreSQL.list'
+
 RUN apt-get update \
-    && apt-get -y --no-install-recommends install nginx
+    && apt-get -y --no-install-recommends install nginx \
     php${PHP_VERSION} \
-    php${PHP_VERSION}-fpm \
+    php${PHP_VERSIONs}-fpm \
     php${PHP_VERSION}-cli \
     php${PHP_VERSION}-common \
     php${PHP_VERSION}-curl \
@@ -55,11 +70,10 @@ RUN apt-get update \
     php-redis \
     php${PHP_VERSION}-zip \
     build-essential \
-    python-software-properties \
     software-properties-common \
     postgresql-${POSTGRE_SQL_VERSION} \
     postgresql-client-${POSTGRE_SQL_VERSION} \
-    postgresql-contrib-${POSTGRE_SQL_VERSION}
+    postgresql-contrib-${POSTGRE_SQL_VERSION} \
     supervisor
 
 # CLEANUP THE MESS
@@ -79,12 +93,6 @@ RUN sed -i 's|sendfile on|sendfile off|' /etc/nginx/nginx.conf && \
     sed -i 's|;extension=php_pdo_pgsql.dll|extension=php_pdo_pgsql.dll|' /etc/php/${PHP_VERSION}/fpm/php.ini && \
     sed -i 's|;extension=php_pgsql.dll|extension=php_pgsql.dll|' /etc/php/${PHP_VERSION}/fpm/php.ini
 
-# INSTAL COMPOSER
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
-    php -r "if (hash_file('SHA384', 'composer-setup.php') === '${COMPOSER_HASH}') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" && \
-    php composer-setup.php --install-dir=/usr/bin --filename=composer && \
-    php -r "unlink('composer-setup.php');"
-
 # SETUP DATABASE
 USER postgres
 RUN /etc/init.d/postgresql start &&\
@@ -93,8 +101,8 @@ RUN /etc/init.d/postgresql start &&\
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/${POSTGRE_SQL_VERSION}/main/pg_hba.conf
 RUN echo "listen_addresses='*'" >> /etc/postgresql/${POSTGRE_SQL_VERSION}/main/postgresql.conf
 
+EXPOSE ${APP_PORT}
+
 # PREPARE STARTUP SCRIPT
 ADD start.sh /start.sh
-RUN chmod 755 /start.sh
-
-CMD ["/start.sh"]
+ENTRYPOINT ["sh", "/start.sh"]
